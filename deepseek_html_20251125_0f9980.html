@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloud Visual</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;500;700&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Rajdhani', sans-serif;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #2a0000 0%, #001a00 100%);
+            color: #cccccc;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        .container {
+            text-align: center;
+            z-index: 2;
+            padding: 2rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .main-section {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .download-section {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+        }
+
+        .main-title {
+            font-size: 4.5rem;
+            font-weight: 900;
+            margin-bottom: 1.5rem;
+            font-family: 'Orbitron', sans-serif;
+            color: #aaaaaa;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+
+        .subtitle {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #999999;
+            line-height: 1.6;
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+
+        .user-counter {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            color: #ff6b6b;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .buttons-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .btn-main {
+            background: #5a0000;
+            color: #cccccc;
+            border: none;
+            padding: 1.2rem 2.5rem;
+            font-size: 1.3rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-main:hover {
+            background: #6a0000;
+            transform: translateY(-2px);
+        }
+
+        .btn-side {
+            background: rgba(255, 255, 255, 0.05);
+            color: #aaaaaa;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 0.8rem 1.5rem;
+            font-size: 1rem;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .btn-side:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .version-title {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 3rem;
+            font-family: 'Orbitron', sans-serif;
+            color: #aaaaaa;
+            text-align: center;
+        }
+
+        .download-options {
+            display: flex;
+            flex-direction: column;
+            gap: 3rem;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .option-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .option-title {
+            font-size: 1.8rem;
+            margin-bottom: 1.5rem;
+            color: #aaaaaa;
+            font-family: 'Orbitron', sans-serif;
+            text-align: left;
+        }
+
+        .script-container {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .code-area {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 1.5rem;
+            min-height: 150px;
+            color: #999999;
+            font-family: monospace;
+            text-align: left;
+            resize: none;
+            outline: none;
+        }
+
+        .copy-btn {
+            background: #5a0000;
+            color: #cccccc;
+            border: none;
+            border-radius: 10px;
+            padding: 0 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .copy-btn:hover {
+            background: #6a0000;
+        }
+
+        .file-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 2rem;
+        }
+
+        .file-option {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .file-option:hover {
+            background: rgba(0, 0, 0, 0.5);
+            transform: translateY(-5px);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .file-logo {
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            border-radius: 50%;
+        }
+
+        .google-logo {
+            background: linear-gradient(135deg, #4285f4, #34a853, #fbbc05, #ea4335);
+        }
+
+        .workupload-logo {
+            background: linear-gradient(135deg, #0066cc, #0099ff, #66ccff);
+        }
+
+        .screenshots-logo {
+            background: linear-gradient(135deg, #8a0000, #ff3333, #ff6666);
+        }
+
+        .file-name {
+            font-size: 1.2rem;
+            color: #aaaaaa;
+            font-weight: 600;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease;
+            padding: 1rem;
+        }
+
+        .modal.hiding {
+            animation: fadeOut 0.3s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #1a0000, #001000);
+            padding: 2rem;
+            border-radius: 15px;
+            max-width: 95%;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            animation: modalSlideIn 0.4s ease;
+        }
+
+        .screenshots-modal .modal-content {
+            max-width: 95%;
+        }
+
+        .modal.hiding .modal-content {
+            animation: modalSlideOut 0.4s ease forwards;
+        }
+
+        @keyframes modalSlideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        @keyframes modalSlideOut {
+            from { transform: translateY(0); opacity: 1; }
+            to { transform: translateY(-50px); opacity: 0; }
+        }
+
+        .modal-content h2 {
+            margin-bottom: 1.5rem;
+            color: #aaaaaa;
+            font-size: 1.8rem;
+            font-family: 'Orbitron', sans-serif;
+            padding-right: 60px;
+        }
+
+        .modal-content p {
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+            font-size: 1.1rem;
+            color: #999999;
+        }
+
+        .modal-content a {
+            color: #666666;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s ease;
+        }
+
+        .modal-content a:hover {
+            color: #888888;
+        }
+
+        .screenshots-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .screenshot-item {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+        }
+
+        .screenshot-image {
+            width: 100%;
+            max-width: 100%;
+            height: 300px;
+            border-radius: 10px;
+            object-fit: cover;
+            display: block;
+            margin: 0 auto;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .screenshot-image:hover {
+            transform: scale(1.02);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .delete-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 0, 0, 0.8);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+
+        .delete-btn:hover {
+            background: rgba(255, 0, 0, 1);
+            transform: scale(1.1);
+        }
+
+        .screenshot-item:hover .delete-btn {
+            display: flex;
+        }
+
+        .more-modes {
+            font-size: 1.3rem;
+            margin-top: 2rem;
+            color: #34a853;
+            font-family: 'Orbitron', sans-serif;
+            text-align: center;
+            font-weight: 700;
+        }
+
+        .add-screenshot-btn {
+            position: absolute;
+            top: 20px;
+            right: 80px;
+            background: #34a853;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+
+        .add-screenshot-btn:hover {
+            background: #2e8b47;
+            transform: scale(1.1);
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: #666666;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: color 0.3s ease;
+            z-index: 11;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .close-btn:hover {
+            color: #ff6b6b;
+        }
+
+        .login-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #aaaaaa;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 0.8rem 1.5rem;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            z-index: 100;
+        }
+
+        .login-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .login-input {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 1rem;
+            color: white;
+            font-size: 1.1rem;
+            width: 100%;
+            margin-bottom: 1rem;
+            outline: none;
+        }
+
+        .login-input:focus {
+            border-color: #ff6b6b;
+        }
+
+        .login-submit {
+            background: #5a0000;
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+        }
+
+        .login-submit:hover {
+            background: #6a0000;
+        }
+
+        .footer {
+            position: fixed;
+            bottom: 20px;
+            width: 100%;
+            text-align: center;
+            color: #555555;
+            font-size: 0.9rem;
+            z-index: 2;
+        }
+
+        /* Мобильные стили */
+        @media (max-width: 768px) {
+            .main-title {
+                font-size: 2.5rem;
+            }
+            
+            .subtitle {
+                font-size: 1.1rem;
+            }
+            
+            .buttons-container {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .btn-main {
+                padding: 1rem 2rem;
+                font-size: 1.1rem;
+            }
+            
+            .file-options {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            
+            .file-option {
+                padding: 1.5rem;
+            }
+            
+            .script-container {
+                flex-direction: column;
+            }
+            
+            .modal-content {
+                padding: 1.5rem;
+            }
+            
+            .screenshot-image {
+                height: 200px;
+            }
+            
+            .add-screenshot-btn {
+                top: 15px;
+                right: 70px;
+                width: 45px;
+                height: 45px;
+                font-size: 1.3rem;
+            }
+            
+            .close-btn {
+                top: 15px;
+                right: 15px;
+                width: 35px;
+                height: 35px;
+                font-size: 1.3rem;
+            }
+            
+            .modal-content h2 {
+                font-size: 1.5rem;
+                padding-right: 50px;
+                margin-bottom: 1rem;
+            }
+            
+            .delete-btn {
+                top: 15px;
+                right: 15px;
+                width: 35px;
+                height: 35px;
+                font-size: 1rem;
+            }
+            
+            .version-title {
+                font-size: 2rem;
+                margin-bottom: 2rem;
+            }
+            
+            .option-title {
+                font-size: 1.5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .main-title {
+                font-size: 2rem;
+            }
+            
+            .container {
+                padding: 1rem;
+            }
+            
+            .add-screenshot-btn {
+                right: 60px;
+                width: 40px;
+                height: 40px;
+            }
+            
+            .screenshot-image {
+                height: 180px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Кнопка входа -->
+    <button class="login-btn" id="loginBtn">Войти</button>
+
+    <!-- Главная секция -->
+    <section class="main-section" id="main">
+        <div class="container">
+            <h1 class="main-title">Cloud Visual</h1>
+            <p class="subtitle">Визуалы, которые улучшат ваш опыт игры в разы!</p>
+            <div class="user-counter" id="userCounter">
+                Количество пользователей: 0
+            </div>
+            
+            <div class="buttons-container">
+                <button class="btn-side" id="aboutBtn">О проекте</button>
+                <a href="#download" class="btn-main" id="downloadBtn">Скачать</a>
+                <button class="btn-side" id="discordBtn">Наш Discord</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Секция загрузки -->
+    <section class="download-section" id="download">
+        <div class="container">
+            <h2 class="version-title">Cloud Visual V3.2</h2>
+            
+            <div class="download-options">
+                <!-- Script секция -->
+                <div class="option-section">
+                    <h3 class="option-title">Script</h3>
+                    <div class="script-container">
+                        <textarea class="code-area" id="codeArea" readonly placeholder="Код появится здесь..."></textarea>
+                        <button class="copy-btn" id="copyBtn">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- File секция -->
+                <div class="option-section">
+                    <h3 class="option-title">File</h3>
+                    <div class="file-options">
+                        <div class="file-option" id="googleDrive">
+                            <div class="file-logo google-logo">
+                                <i class="fab fa-google-drive"></i>
+                            </div>
+                            <div class="file-name">Google Drive</div>
+                        </div>
+                        <div class="file-option" id="workupload">
+                            <div class="file-logo workupload-logo">
+                                <i class="fas fa-cloud-download-alt"></i>
+                            </div>
+                            <div class="file-name">Workupload</div>
+                        </div>
+                        <div class="file-option" id="screenshotsBtn">
+                            <div class="file-logo screenshots-logo">
+                                <i class="fas fa-images"></i>
+                            </div>
+                            <div class="file-name">Скриншоты из игры</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <div class="footer">
+        Cloud Visual &copy; 2025 | Все права защищены
+    </div>
+    
+    <!-- Модальные окна -->
+    <div class="modal" id="aboutModal">
+        <div class="modal-content">
+            <button class="close-btn" id="closeAbout">&times;</button>
+            <h2>О проекте</h2>
+            <p>Этот проект создан для того, чтобы улучшить вашу игру. Вы сможете сделать картинку очень красивой без потери FPS, улучшить графику! Выбор за тобой.</p>
+        </div>
+    </div>
+    
+    <div class="modal" id="discordModal">
+        <div class="modal-content">
+            <button class="close-btn" id="closeDiscord">&times;</button>
+            <h2>Наш Discord</h2>
+            <p>Подключайтесь к нашему Discord, чтобы следить за обновлениями!</p>
+            <p><a href="https://discord.gg/unKhMpEs5U" target="_blank">https://discord.gg/unKhMpEs5U</a></p>
+        </div>
+    </div>
+
+    <!-- Модальное окно входа -->
+    <div class="modal" id="loginModal">
+        <div class="modal-content">
+            <button class="close-btn" id="closeLogin">&times;</button>
+            <h2>Вход в систему</h2>
+            <p>Введите ваш никнейм в Roblox:</p>
+            <input type="text" class="login-input" id="usernameInput" placeholder="Ваш никнейм...">
+            <button class="login-submit" id="loginSubmit">Войти</button>
+        </div>
+    </div>
+
+    <!-- Модальное окно скриншотов -->
+    <div class="modal screenshots-modal" id="screenshotsModal">
+        <div class="modal-content">
+            <button class="close-btn" id="closeScreenshots">&times;</button>
+            <h2>Скриншоты из игры</h2>
+            
+            <!-- Кнопка добавления фото (только для администратора) -->
+            <button class="add-screenshot-btn" id="addScreenshotBtn" style="display: none;">
+                <i class="fas fa-plus"></i>
+            </button>
+            <input type="file" class="file-input" id="fileInput" accept="image/*">
+            
+            <div class="screenshots-grid" id="screenshotsGrid">
+                <!-- Скриншоты будут появляться здесь -->
+            </div>
+            <div class="more-modes">
+                И много еще красивых режимов только у нас!
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase конфигурация
+        const firebaseConfig = {
+            databaseURL: "https://cloud-visual-87e5b-default-rtdb.firebaseio.com/"
+        };
+
+        // Инициализация Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // Глобальные переменные
+        let userCount = 0;
+        let currentUser = null;
+        const ADMIN_USERNAME = 'vz23zz';
+        let screenshots = [];
+
+        // Элементы DOM
+        const counterElement = document.getElementById('userCounter');
+        const loginBtn = document.getElementById('loginBtn');
+        const loginModal = document.getElementById('loginModal');
+        const loginSubmit = document.getElementById('loginSubmit');
+        const usernameInput = document.getElementById('usernameInput');
+        const closeLogin = document.getElementById('closeLogin');
+        const addScreenshotBtn = document.getElementById('addScreenshotBtn');
+        const fileInput = document.getElementById('fileInput');
+        const screenshotsGrid = document.getElementById('screenshotsGrid');
+
+        // Firebase функции
+        function initFirebaseListeners() {
+            // Слушаем изменения счетчика
+            database.ref('userCount').on('value', (snapshot) => {
+                const data = snapshot.val();
+                userCount = data !== null ? data : 0;
+                updateCounterDisplay();
+            });
+
+            // Слушаем изменения скриншотов
+            database.ref('screenshots').on('value', (snapshot) => {
+                const data = snapshot.val();
+                screenshots = data !== null ? data : [];
+                renderScreenshots();
+            });
+        }
+
+        async function updateUserCount(newCount) {
+            try {
+                await database.ref('userCount').set(newCount);
+            } catch (error) {
+                console.error('Ошибка обновления счетчика:', error);
+            }
+        }
+
+        async function updateScreenshots(newScreenshots) {
+            try {
+                await database.ref('screenshots').set(newScreenshots);
+            } catch (error) {
+                console.error('Ошибка обновления скриншотов:', error);
+            }
+        }
+
+        // Инициализация
+        function init() {
+            initFirebaseListeners();
+            updateLoginButton();
+        }
+
+        // Обновление отображения счетчика
+        function updateCounterDisplay() {
+            counterElement.textContent = `Количество пользователей: ${userCount}`;
+        }
+
+        // Увеличение счетчика
+        async function incrementCounter() {
+            const newCount = userCount + 1;
+            await updateUserCount(newCount);
+        }
+
+        // Отрисовка скриншотов
+        function renderScreenshots() {
+            screenshotsGrid.innerHTML = '';
+            
+            if (screenshots.length === 0) {
+                return;
+            }
+            
+            screenshots.forEach((screenshot, index) => {
+                addScreenshotToGrid(screenshot, index);
+            });
+        }
+
+        // Добавление скриншота в сетку
+        function addScreenshotToGrid(imageData, index) {
+            const screenshotItem = document.createElement('div');
+            screenshotItem.className = 'screenshot-item';
+            
+            const img = document.createElement('img');
+            img.src = imageData;
+            img.alt = `Скриншот ${index + 1}`;
+            img.className = 'screenshot-image';
+            
+            // Кнопка удаления (только для администратора)
+            if (currentUser === ADMIN_USERNAME) {
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'delete-btn';
+                deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+                deleteBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    deleteScreenshot(index);
+                };
+                screenshotItem.appendChild(deleteBtn);
+            }
+            
+            screenshotItem.appendChild(img);
+            screenshotsGrid.appendChild(screenshotItem);
+        }
+
+        // Удаление скриншота
+        async function deleteScreenshot(index) {
+            const newScreenshots = [...screenshots];
+            newScreenshots.splice(index, 1);
+            await updateScreenshots(newScreenshots);
+        }
+
+        // Добавление нового скриншота
+        async function addScreenshot(imageData) {
+            const newScreenshots = [...screenshots, imageData];
+            await updateScreenshots(newScreenshots);
+        }
+
+        // Обновление кнопки входа
+        function updateLoginButton() {
+            if (currentUser) {
+                loginBtn.textContent = `Выйти (${currentUser})`;
+            } else {
+                loginBtn.textContent = 'Войти';
+            }
+        }
+
+        // Обработчики событий
+        loginBtn.addEventListener('click', () => {
+            if (currentUser) {
+                // Выход
+                currentUser = null;
+                updateLoginButton();
+                addScreenshotBtn.style.display = 'none';
+                renderScreenshots();
+            } else {
+                // Вход
+                loginModal.style.display = 'flex';
+                loginModal.classList.remove('hiding');
+            }
+        });
+
+        loginSubmit.addEventListener('click', () => {
+            const username = usernameInput.value.trim();
+            if (username) {
+                currentUser = username;
+                updateLoginButton();
+                closeModal(loginModal);
+                
+                if (currentUser === ADMIN_USERNAME) {
+                    addScreenshotBtn.style.display = 'flex';
+                } else {
+                    addScreenshotBtn.style.display = 'none';
+                }
+                
+                renderScreenshots();
+                usernameInput.value = '';
+            }
+        });
+
+        addScreenshotBtn.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file && file.size < 5 * 1024 * 1024) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    addScreenshot(e.target.result);
+                };
+                reader.readAsDataURL(file);
+            } else if (file) {
+                alert('Файл слишком большой! Максимум 5MB.');
+            }
+            fileInput.value = '';
+        });
+
+        // Остальной код модальных окон
+        const aboutBtn = document.getElementById('aboutBtn');
+        const discordBtn = document.getElementById('discordBtn');
+        const aboutModal = document.getElementById('aboutModal');
+        const discordModal = document.getElementById('discordModal');
+        const screenshotsModal = document.getElementById('screenshotsModal');
+        const closeAbout = document.getElementById('closeAbout');
+        const closeDiscord = document.getElementById('closeDiscord');
+        const closeScreenshots = document.getElementById('closeScreenshots');
+        const copyBtn = document.getElementById('copyBtn');
+        const codeArea = document.getElementById('codeArea');
+        const googleDrive = document.getElementById('googleDrive');
+        const workupload = document.getElementById('workupload');
+        const screenshotsBtn = document.getElementById('screenshotsBtn');
+        
+        // Открытие модальных окон
+        aboutBtn.addEventListener('click', () => {
+            aboutModal.style.display = 'flex';
+            aboutModal.classList.remove('hiding');
+        });
+        
+        discordBtn.addEventListener('click', () => {
+            discordModal.style.display = 'flex';
+            discordModal.classList.remove('hiding');
+        });
+
+        screenshotsBtn.addEventListener('click', () => {
+            screenshotsModal.style.display = 'flex';
+            screenshotsModal.classList.remove('hiding');
+        });
+        
+        // Закрытие модальных окон
+        function closeModal(modal) {
+            modal.classList.add('hiding');
+            setTimeout(() => {
+                modal.style.display = 'none';
+                modal.classList.remove('hiding');
+            }, 300);
+        }
+        
+        closeAbout.addEventListener('click', () => closeModal(aboutModal));
+        closeDiscord.addEventListener('click', () => closeModal(discordModal));
+        closeScreenshots.addEventListener('click', () => closeModal(screenshotsModal));
+        closeLogin.addEventListener('click', () => closeModal(loginModal));
+        
+        // Закрытие модальных окон при клике вне их
+        window.addEventListener('click', (e) => {
+            if (e.target === aboutModal) closeModal(aboutModal);
+            if (e.target === discordModal) closeModal(discordModal);
+            if (e.target === screenshotsModal) closeModal(screenshotsModal);
+            if (e.target === loginModal) closeModal(loginModal);
+        });
+        
+        // Копирование кода + счетчик
+        copyBtn.addEventListener('click', () => {
+            codeArea.select();
+            document.execCommand('copy');
+            incrementCounter();
+            
+            const originalText = copyBtn.innerHTML;
+            copyBtn.innerHTML = '<i class="fas fa-check"></i>';
+            copyBtn.style.background = '#34a853';
+            
+            setTimeout(() => {
+                copyBtn.innerHTML = originalText;
+                copyBtn.style.background = '#5a0000';
+            }, 2000);
+        });
+        
+        // Обработчики для кнопок загрузки + счетчик
+        googleDrive.addEventListener('click', () => {
+            incrementCounter();
+            alert('Ссылка на Google Drive будет добавлена позже');
+        });
+        
+        workupload.addEventListener('click', () => {
+            incrementCounter();
+            alert('Ссылка на Workupload будет добавлена позже');
+        });
+
+        // Инициализация при загрузке
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

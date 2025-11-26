@@ -174,6 +174,8 @@
             text-align: left;
             resize: none;
             outline: none;
+            font-size: 0.9rem;
+            line-height: 1.4;
         }
 
         .copy-btn {
@@ -208,6 +210,8 @@
             flex-direction: column;
             align-items: center;
             gap: 1rem;
+            text-decoration: none;
+            color: inherit;
         }
 
         .file-option:hover {
@@ -643,7 +647,7 @@
                 <div class="option-section">
                     <h3 class="option-title">Script</h3>
                     <div class="script-container">
-                        <textarea class="code-area" id="codeArea" readonly placeholder="Код появится здесь..."></textarea>
+                        <textarea class="code-area" id="codeArea" readonly>loadstring(game:HttpGet("https://raw.githubusercontent.com/cloud123911/cloud-visual/refs/heads/main/cloud%20visual.lua"))()</textarea>
                         <button class="copy-btn" id="copyBtn">
                             <i class="fas fa-copy"></i>
                         </button>
@@ -654,18 +658,18 @@
                 <div class="option-section">
                     <h3 class="option-title">File</h3>
                     <div class="file-options">
-                        <div class="file-option" id="googleDrive">
-                            <div class="file-logo google-logo">
-                                <i class="fab fa-google-drive"></i>
-                            </div>
-                            <div class="file-name">Google Drive</div>
-                        </div>
-                        <div class="file-option" id="workupload">
+                        <a href="https://workupload.com/file/bu5nrSUhmLM" target="_blank" class="file-option" id="workupload">
                             <div class="file-logo workupload-logo">
                                 <i class="fas fa-cloud-download-alt"></i>
                             </div>
                             <div class="file-name">Workupload</div>
-                        </div>
+                        </a>
+                        <a href="https://drive.google.com/file/d/19kJbq7ToZsl7u29QXAEk-XXuqQvV9ymw/view?usp=sharing" target="_blank" class="file-option" id="googleDrive">
+                            <div class="file-logo google-logo">
+                                <i class="fab fa-google-drive"></i>
+                            </div>
+                            <div class="file-name">Google Drive</div>
+                        </a>
                         <div class="file-option" id="screenshotsBtn">
                             <div class="file-logo screenshots-logo">
                                 <i class="fas fa-images"></i>
@@ -758,6 +762,8 @@
         const addScreenshotBtn = document.getElementById('addScreenshotBtn');
         const fileInput = document.getElementById('fileInput');
         const screenshotsGrid = document.getElementById('screenshotsGrid');
+        const codeArea = document.getElementById('codeArea');
+        const copyBtn = document.getElementById('copyBtn');
 
         // Firebase функции
         function initFirebaseListeners() {
@@ -921,19 +927,34 @@
             fileInput.value = '';
         });
 
+        // Копирование скрипта
+        copyBtn.addEventListener('click', () => {
+            codeArea.select();
+            document.execCommand('copy');
+            incrementCounter();
+            
+            const originalText = copyBtn.innerHTML;
+            copyBtn.innerHTML = '<i class="fas fa-check"></i>';
+            copyBtn.style.background = '#34a853';
+            
+            setTimeout(() => {
+                copyBtn.innerHTML = originalText;
+                copyBtn.style.background = '#5a0000';
+            }, 2000);
+        });
+
         // Остальной код модальных окон
         const aboutBtn = document.getElementById('aboutBtn');
         const discordBtn = document.getElementById('discordBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
         const aboutModal = document.getElementById('aboutModal');
         const discordModal = document.getElementById('discordModal');
         const screenshotsModal = document.getElementById('screenshotsModal');
         const closeAbout = document.getElementById('closeAbout');
         const closeDiscord = document.getElementById('closeDiscord');
         const closeScreenshots = document.getElementById('closeScreenshots');
-        const copyBtn = document.getElementById('copyBtn');
-        const codeArea = document.getElementById('codeArea');
-        const googleDrive = document.getElementById('googleDrive');
         const workupload = document.getElementById('workupload');
+        const googleDrive = document.getElementById('googleDrive');
         const screenshotsBtn = document.getElementById('screenshotsBtn');
         
         // Открытие модальных окон
@@ -974,31 +995,13 @@
             if (e.target === loginModal) closeModal(loginModal);
         });
         
-        // Копирование кода + счетчик
-        copyBtn.addEventListener('click', () => {
-            codeArea.select();
-            document.execCommand('copy');
-            incrementCounter();
-            
-            const originalText = copyBtn.innerHTML;
-            copyBtn.innerHTML = '<i class="fas fa-check"></i>';
-            copyBtn.style.background = '#34a853';
-            
-            setTimeout(() => {
-                copyBtn.innerHTML = originalText;
-                copyBtn.style.background = '#5a0000';
-            }, 2000);
-        });
-        
         // Обработчики для кнопок загрузки + счетчик
-        googleDrive.addEventListener('click', () => {
-            incrementCounter();
-            alert('Ссылка на Google Drive будет добавлена позже');
-        });
-        
         workupload.addEventListener('click', () => {
             incrementCounter();
-            alert('Ссылка на Workupload будет добавлена позже');
+        });
+        
+        googleDrive.addEventListener('click', () => {
+            incrementCounter();
         });
 
         // Инициализация при загрузке

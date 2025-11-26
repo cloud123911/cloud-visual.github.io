@@ -17,125 +17,20 @@ CloudHub.ResetOnSpawn = false
 CloudHub.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 CloudHub.Parent = playerGui
 
+local splashScreenActive = true
+
+local isMobile = UserInputService.TouchEnabled and not UserInputService.MouseEnabled
+local isTablet = isMobile and (GuiService:GetScreenResolution().X > 1000)
+
+local mobileTextSize = isTablet and 14 or 16
+local mobileTitleSize = isTablet and 16 or 18
+local mainFrameWidth = isMobile and (isTablet and 600 or 450) or 650
+local mainFrameHeight = isMobile and (isTablet and 450 or 350) or 450
+
 local function saveSettings()
-    local userId = tostring(player.UserId)
-    local settingsTable = {
-        theme = currentTheme,
-        language = currentLanguage,
-        viewFPS = settingsState.viewFPS,
-        fieldOfView = settingsState.fieldOfView,
-        esp = settingsState.esp,
-        espColor = {
-            R = math.floor(settingsState.espColor.R * 255),
-            G = math.floor(settingsState.espColor.G * 255),
-            B = math.floor(settingsState.espColor.B * 255)
-        },
-        textureColors = settingsState.textureColors,
-        removeTexture = settingsState.removeTexture,
-        removeColor = settingsState.removeColor,
-        renderDistance = settingsState.renderDistance,
-        simpleLighting = settingsState.simpleLighting
-    }
-    
-    local success, encoded = pcall(function()
-        return HttpService:JSONEncode(settingsTable)
-    end)
-    
-    if success then
-        pcall(function()
-            writefile("cloud_visual_settings_" .. userId .. ".json", encoded)
-        end)
-    end
 end
 
 local function loadSettings()
-    local userId = tostring(player.UserId)
-    local success, settingsData = pcall(function()
-        if isfile("cloud_visual_settings_" .. userId .. ".json") then
-            return readfile("cloud_visual_settings_" .. userId .. ".json")
-        end
-        return nil
-    end)
-    
-    if success and settingsData then
-        local success2, decoded = pcall(function()
-            return HttpService:JSONDecode(settingsData)
-        end)
-        
-        if success2 and decoded then
-            if decoded.theme and themes[decoded.theme] then
-                currentTheme = decoded.theme
-                settingsState.theme = decoded.theme
-            end
-            
-            if decoded.language then
-                currentLanguage = decoded.language
-                settingsState.language = decoded.language
-            end
-            
-            if decoded.viewFPS ~= nil then
-                settingsState.viewFPS = decoded.viewFPS
-                viewFPSEnabled = decoded.viewFPS
-                FPSFrame.Visible = decoded.viewFPS
-            end
-            
-            if decoded.fieldOfView then
-                settingsState.fieldOfView = decoded.fieldOfView
-                local camera = workspace.CurrentCamera
-                if camera then
-                    camera.FieldOfView = decoded.fieldOfView
-                end
-            end
-            
-            if decoded.esp ~= nil then
-                settingsState.esp = decoded.esp
-                espEnabled = decoded.esp
-                if decoded.esp then
-                    setupESP(true)
-                end
-            end
-            
-            if decoded.espColor then
-                local color = Color3.fromRGB(
-                    decoded.espColor.R or 255,
-                    decoded.espColor.G or 0,
-                    decoded.espColor.B or 0
-                )
-                settingsState.espColor = color
-                updateESPColor(color)
-            end
-            
-            if decoded.textureColors then
-                settingsState.textureColors = decoded.textureColors
-            end
-            
-            if decoded.removeTexture ~= nil then
-                settingsState.removeTexture = decoded.removeTexture
-                if decoded.removeTexture then
-                    setupRemoveTexture(true)
-                end
-            end
-            
-            if decoded.removeColor ~= nil then
-                settingsState.removeColor = decoded.removeColor
-                if decoded.removeColor then
-                    setupRemoveColor(true)
-                end
-            end
-            
-            if decoded.renderDistance then
-                settingsState.renderDistance = decoded.renderDistance
-                setupRenderDistance(decoded.renderDistance)
-            end
-            
-            if decoded.simpleLighting ~= nil then
-                settingsState.simpleLighting = decoded.simpleLighting
-                if decoded.simpleLighting then
-                    setupSimpleLighting(true)
-                end
-            end
-        end
-    end
 end
 
 local function showSplashScreen()
@@ -187,6 +82,7 @@ local function showSplashScreen()
     
     wait(1.5)
     SplashFrame:Destroy()
+    splashScreenActive = false
 end
 
 local OpenButton = Instance.new("TextButton")
@@ -201,7 +97,7 @@ OpenButton.TextColor3 = Color3.fromRGB(200, 220, 255)
 OpenButton.TextSize = 14
 OpenButton.Font = Enum.Font.GothamBold
 OpenButton.ZIndex = 10
-OpenButton.Visible = true
+OpenButton.Visible = false
 OpenButton.Parent = CloudHub
 
 local OpenButtonCorner = Instance.new("UICorner")
@@ -221,31 +117,70 @@ OpenButton.MouseLeave:Connect(function()
     TweenService:Create(OpenButton, TweenInfo.new(0.3), {BackgroundTransparency = 0.2}):Play()
 end)
 
-local FPSFrame = Instance.new("Frame")
-FPSFrame.Name = "FPSFrame"
-FPSFrame.Size = UDim2.new(0, 100, 0, 40)
-FPSFrame.Position = UDim2.new(1, -110, 0, 10)
-FPSFrame.BackgroundColor3 = Color3.fromRGB(20, 40, 80)
-FPSFrame.BackgroundTransparency = 0.3
-FPSFrame.BorderSizePixel = 0
-FPSFrame.Visible = false
-FPSFrame.ZIndex = 100
-FPSFrame.Parent = CloudHub
+local StatsFrame = Instance.new("Frame")
+StatsFrame.Name = "StatsFrame"
+StatsFrame.Size = UDim2.new(0, 150, 0, 100)
+StatsFrame.Position = UDim2.new(1, -160, 0, 10)
+StatsFrame.BackgroundColor3 = Color3.fromRGB(20, 40, 80)
+StatsFrame.BackgroundTransparency = 0.3
+StatsFrame.BorderSizePixel = 0
+StatsFrame.Visible = false
+StatsFrame.ZIndex = 100
+StatsFrame.Parent = CloudHub
 
-local FPSUICorner = Instance.new("UICorner")
-FPSUICorner.CornerRadius = UDim.new(0, 6)
-FPSUICorner.Parent = FPSFrame
+local StatsUICorner = Instance.new("UICorner")
+StatsUICorner.CornerRadius = UDim.new(0, 6)
+StatsUICorner.Parent = StatsFrame
 
-local FPSLabel = Instance.new("TextLabel")
-FPSLabel.Name = "FPSLabel"
-FPSLabel.Size = UDim2.new(1, 0, 1, 0)
-FPSLabel.BackgroundTransparency = 1
-FPSLabel.Text = "FPS: 0"
-FPSLabel.TextColor3 = Color3.fromRGB(200, 220, 255)
-FPSLabel.TextSize = 16
-FPSLabel.Font = Enum.Font.GothamBold
-FPSLabel.ZIndex = 101
-FPSLabel.Parent = FPSFrame
+local StatsLabel = Instance.new("TextLabel")
+StatsLabel.Name = "StatsLabel"
+StatsLabel.Size = UDim2.new(1, -10, 1, -10)
+StatsLabel.Position = UDim2.new(0, 5, 0, 5)
+StatsLabel.BackgroundTransparency = 1
+StatsLabel.Text = "FPS: 0\nPing: 0ms\nTime: 00:00:00\nSpeed: 0 studs"
+StatsLabel.TextColor3 = Color3.fromRGB(200, 220, 255)
+StatsLabel.TextSize = 14
+StatsLabel.Font = Enum.Font.Gotham
+StatsLabel.TextXAlignment = Enum.TextXAlignment.Left
+StatsLabel.TextYAlignment = Enum.TextYAlignment.Top
+StatsLabel.ZIndex = 101
+StatsLabel.Parent = StatsFrame
+
+local draggingStats = false
+local dragInputStats
+local dragStartStats
+local startPosStats
+
+local function updateStatsInput(input)
+    local delta = input.Position - dragStartStats
+    StatsFrame.Position = UDim2.new(startPosStats.X.Scale, startPosStats.X.Offset + delta.X, startPosStats.Y.Scale, startPosStats.Y.Offset + delta.Y)
+end
+
+StatsFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        draggingStats = true
+        dragStartStats = input.Position
+        startPosStats = StatsFrame.Position
+        
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                draggingStats = false
+            end
+        end)
+    end
+end)
+
+StatsFrame.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInputStats = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInputStats and draggingStats then
+        updateStatsInput(input)
+    end
+end)
 
 local Background = Instance.new("Frame")
 Background.Name = "Background"
@@ -262,10 +197,6 @@ BlurEffect.Size = 10
 BlurEffect.Enabled = false
 BlurEffect.Parent = Lighting
 
-local isMobile = UserInputService.TouchEnabled and not UserInputService.MouseEnabled
-local mainFrameWidth = isMobile and 500 or 650
-local mainFrameHeight = isMobile and 400 or 450
-
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Size = UDim2.new(0, mainFrameWidth, 0, mainFrameHeight)
@@ -276,6 +207,42 @@ MainFrame.ClipsDescendants = true
 MainFrame.Visible = false
 MainFrame.ZIndex = 2
 MainFrame.Parent = CloudHub
+
+local dragging = false
+local dragInput
+local dragStart
+local startPos
+
+local function updateInput(input)
+    local delta = input.Position - dragStart
+    MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+end
+
+MainFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = MainFrame.Position
+        
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+MainFrame.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        updateInput(input)
+    end
+end)
 
 local UICorner = Instance.new("UICorner")
 UICorner.CornerRadius = UDim.new(0, 8)
@@ -319,7 +286,7 @@ Title.Position = UDim2.new(0, 0, 0, 0)
 Title.BackgroundColor3 = Color3.fromRGB(15, 30, 60)
 Title.BackgroundTransparency = 0.5
 Title.BorderSizePixel = 0
-Title.Text = "CLOUD VISUAL V2"
+Title.Text = "CLOUD VISUAL V3.2"
 Title.TextColor3 = Color3.fromRGB(200, 220, 255)
 Title.TextScaled = true
 Title.Font = Enum.Font.GothamBold
@@ -383,7 +350,7 @@ local translations = {
         discoMode = "Disco Mode",
         esp = "ESP",
         lowGraphics = "Low Graphics",
-        viewFPS = "View FPS",
+        viewFPS = "View Stats",
         fogIntensity = "Fog Intensity",
         fogColor = "Fog Color",
         lightColor = "Light Color",
@@ -398,7 +365,7 @@ local translations = {
         midnight = "Midnight",
         vintage = "Vintage",
         credit = "credit by cloud(vz23z)",
-        fpsPlaceholder = "FPS: 0",
+        fpsPlaceholder = "FPS: 0\nPing: 0ms\nTime: 00:00:00\nSpeed: 0 studs",
         intensityPlaceholder = "Enter intensity (0-100)",
         saturationPlaceholder = "Enter saturation (0-200)",
         fovPlaceholder = "Enter FOV value (50-120)",
@@ -437,7 +404,21 @@ local translations = {
         removeColor = "Remove Color",
         renderDistance = "Render Distance",
         simpleLighting = "Simple Lighting",
-        enterDistance = "Enter distance (1-100)"
+        enterDistance = "Enter distance (1-100)",
+        resetSeasonColors = "Reset Season Colors",
+        showHitboxes = "Show Hitboxes",
+        saveConfig = "Save Configuration",
+        loadConfig = "Load Configuration",
+        tail = "Tail",
+        fireflies = "Fireflies",
+        timeCycle = "Time Cycle",
+        realTime = "Real Time",
+        tailLength = "Tail Length",
+        fireflyCount = "Firefly Count",
+        fireflyColor = "Firefly Color",
+        tailColor = "Tail Color",
+        crosshair = "Crosshair",
+        crosshairColor = "Crosshair Color"
     },
     Russian = {
         light = "Свет",
@@ -455,7 +436,7 @@ local translations = {
         discoMode = "Диско режим",
         esp = "ESP",
         lowGraphics = "Низкая графика",
-        viewFPS = "Показать FPS",
+        viewFPS = "Показать статист.",
         fogIntensity = "Интенсивность тумана",
         fogColor = "Цвет тумана",
         lightColor = "Цвет света",
@@ -470,7 +451,7 @@ local translations = {
         midnight = "Полночь",
         vintage = "Винтаж",
         credit = "автор: cloud(vz23z)",
-        fpsPlaceholder = "FPS: 0",
+        fpsPlaceholder = "FPS: 0\nПинг: 0мс\nВремя: 00:00:00\nСкорость: 0 studs",
         intensityPlaceholder = "Введите интенсивность (0-100)",
         saturationPlaceholder = "Введите насыщенность (0-200)",
         fovPlaceholder = "Введите значение FOV (50-120)",
@@ -509,7 +490,21 @@ local translations = {
         removeColor = "Удалить цвета",
         renderDistance = "Дальность прорисовки",
         simpleLighting = "Простое освещение",
-        enterDistance = "Введите расстояние (1-100)"
+        enterDistance = "Введите расстояние (1-100)",
+        resetSeasonColors = "Сбросить цвета сезона",
+        showHitboxes = "Показать хитбоксы",
+        saveConfig = "Сохранить конфиг",
+        loadConfig = "Загрузить конфиг",
+        tail = "Хвост",
+        fireflies = "Светлячки",
+        timeCycle = "Цикл времени",
+        realTime = "Реальное время",
+        tailLength = "Длина хвоста",
+        fireflyCount = "Кол-во светлячков",
+        fireflyColor = "Цвет светлячков",
+        tailColor = "Цвет хвоста",
+        crosshair = "Прицел",
+        crosshairColor = "Цвет прицела"
     },
     Ukrainian = {
         light = "Світло",
@@ -527,7 +522,7 @@ local translations = {
         discoMode = "Діско режим",
         esp = "ESP",
         lowGraphics = "Низька графіка",
-        viewFPS = "Показати FPS",
+        viewFPS = "Показати статист.",
         fogIntensity = "Інтенсивність туману",
         fogColor = "Колір туману",
         lightColor = "Колір світла",
@@ -542,7 +537,7 @@ local translations = {
         midnight = "Північ",
         vintage = "Вінтаж",
         credit = "автор: cloud(vz23z)",
-        fpsPlaceholder = "FPS: 0",
+        fpsPlaceholder = "FPS: 0\nПінг: 0мс\nЧас: 00:00:00\nШвидкість: 0 studs",
         intensityPlaceholder = "Введіть інтенсивність (0-100)",
         saturationPlaceholder = "Введіть насиченість (0-200)",
         fovPlaceholder = "Введіть значення FOV (50-120)",
@@ -581,7 +576,21 @@ local translations = {
         removeColor = "Видалити кольори",
         renderDistance = "Дальність прорисовки",
         simpleLighting = "Просте освітлення",
-        enterDistance = "Введіть відстань (1-100)"
+        enterDistance = "Введіть відстань (1-100)",
+        resetSeasonColors = "Скинути кольори сезону",
+        showHitboxes = "Показати хітбокси",
+        saveConfig = "Зберегти конфіг",
+        loadConfig = "Завантажити конфіг",
+        tail = "Хвіст",
+        fireflies = "Світлячки",
+        timeCycle = "Цикл часу",
+        realTime = "Реальний час",
+        tailLength = "Довжина хвоста",
+        fireflyCount = "Кількість світлячків",
+        fireflyColor = "Колір світлячків",
+        tailColor = "Колір хвоста",
+        crosshair = "Прицел",
+        crosshairColor = "Колір прицілу"
     }
 }
 
@@ -774,6 +783,7 @@ local sections = {
     "Shaders",
     "Textures",
     "FPS boost",
+    "Animation",
     "Other",
     "Settings"
 }
@@ -812,7 +822,18 @@ local settingsState = {
     removeTexture = false,
     removeColor = false,
     renderDistance = 100,
-    simpleLighting = false
+    simpleLighting = false,
+    showHitboxes = false,
+    tailEnabled = false,
+    firefliesEnabled = false,
+    timeCycleEnabled = false,
+    realTimeEnabled = false,
+    tailLength = 15,
+    fireflyCount = 50,
+    fireflyColor = Color3.fromRGB(255, 255, 100),
+    tailColor = Color3.fromRGB(0, 100, 255),
+    crosshairEnabled = false,
+    crosshairColor = Color3.fromRGB(255, 255, 255)
 }
 
 local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
@@ -842,10 +863,40 @@ local removeTextureEnabled = false
 local removeColorEnabled = false
 local simpleLightingEnabled = false
 local originalRenderDistance = 10000
+local showHitboxesEnabled = false
+local hitboxConnections = {}
+local hitboxHighlights = {}
+
+local tailEnabled = false
+local firefliesEnabled = false
+local tailParts = {}
+local tailConnections = {}
+local fireflies = {}
+local fireflyConnections = {}
+
+local timeCycleEnabled = false
+local realTimeEnabled = false
+local timeCycleConnection = nil
+local realTimeConnection = nil
+
+local crosshairEnabled = false
+local crosshairFrame = nil
+local crosshairColor = Color3.fromRGB(255, 255, 255)
+
+local draggingCrosshair = false
+local dragStartCrosshair
+local startPosCrosshair
+
+local snowEnabled = false
+local snowflakes = {}
+local snowConnections = {}
+local lastSnowSpawnTime = 0
+local snowCreationTimes = {}
 
 local frameCount = 0
 local fps = 0
 local lastTime = 0
+local startTime = tick()
 
 local graphicsPresets = {
     Default = {
@@ -893,14 +944,15 @@ end
 local function showNotification(message)
     local notification = Instance.new("TextLabel")
     notification.Name = "Notification"
-    notification.Size = UDim2.new(0, 200, 0, 40)
-    notification.Position = UDim2.new(0.5, -100, 0.1, 0)
+    notification.Size = UDim2.new(0, 300, 0, 60)
+    notification.Position = UDim2.new(0.5, -150, 0.1, 0)
     notification.BackgroundColor3 = themes[currentTheme].buttonColor
     notification.BackgroundTransparency = 0.2
     notification.Text = message
     notification.TextColor3 = themes[currentTheme].textColor
-    notification.TextSize = 14
+    notification.TextSize = mobileTextSize
     notification.Font = Enum.Font.Gotham
+    notification.TextWrapped = true
     notification.ZIndex = 1000
     notification.Parent = CloudHub
     
@@ -929,18 +981,23 @@ local function updateTheme()
     Divider.BackgroundColor3 = theme.accentColor
     LeftPanel.ScrollBarImageColor3 = theme.accentColor
     RightPanel.ScrollBarImageColor3 = theme.accentColor
-    FPSFrame.BackgroundColor3 = theme.buttonColor
-    FPSLabel.TextColor3 = theme.textColor
+    StatsFrame.BackgroundColor3 = theme.buttonColor
+    StatsLabel.TextColor3 = theme.textColor
     OpenButton.BackgroundColor3 = theme.buttonColor
     OpenButton.TextColor3 = theme.textColor
     OpenButtonStroke.Color = theme.accentColor
     Background.BackgroundColor3 = Color3.new(0, 0, 0)
     
+    CloseButton.BackgroundColor3 = theme.buttonColor
+    CloseButton.TextColor3 = theme.textColor
+    
+    local activeSection = nil
     for _, sectionName in ipairs(sections) do
         local button = LeftPanel:FindFirstChild(sectionName .. "Button")
         if button then
             if button.BackgroundColor3 == themes[currentTheme].accentColor then
                 button.BackgroundColor3 = theme.accentColor
+                activeSection = sectionName
             else
                 button.BackgroundColor3 = theme.buttonColor
             end
@@ -959,43 +1016,25 @@ local function updateTheme()
         creditLabel.TextColor3 = Color3.fromRGB(150, 170, 210)
     end
     
-    for _, child in ipairs(RightPanel:GetChildren()) do
-        if child:IsA("Frame") then
-            if child.Name:find("Toggle") or child.Name:find("Button") or child.Name:find("Input") or child.Name:find("Color") then
-                child.BackgroundColor3 = theme.buttonColor
-            end
-            
-            for _, descendant in ipairs(child:GetDescendants()) do
-                if descendant:IsA("TextLabel") or descendant:IsA("TextButton") or descendant:IsA("TextBox") then
-                    if descendant.Name == "Label" or descendant.Name == "Button" or descendant.Name == "TextBox" then
-                        descendant.TextColor3 = theme.textColor
-                    end
-                end
-                
-                if descendant:IsA("Frame") and descendant.Name == "ToggleBackground" then
-                    local toggleBtn = descendant:FindFirstChild("ToggleButton")
-                    if toggleBtn then
-                        local isEnabled = descendant.BackgroundColor3 == themes[currentTheme].toggleOn
-                        if isEnabled then
-                            descendant.BackgroundColor3 = theme.toggleOn
-                        else
-                            descendant.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
-                        end
-                    end
-                end
-                
-                if descendant:IsA("TextBox") then
-                    descendant.BackgroundColor3 = theme.secondaryColor
-                end
-                
-                if descendant:IsA("Frame") and descendant.Name == "RGBContainer" then
-                    descendant.BackgroundColor3 = theme.secondaryColor
-                end
-            end
+    if activeSection then
+        if activeSection == "Light" then
+            setupLightSection()
+        elseif activeSection == "Season" then
+            setupSeasonSection()
+        elseif activeSection == "Shaders" then
+            setupShadersSection()
+        elseif activeSection == "Textures" then
+            setupTexturesSection()
+        elseif activeSection == "FPS boost" then
+            setupFPSBoostSection()
+        elseif activeSection == "Animation" then
+            setupAnimationSection()
+        elseif activeSection == "Other" then
+            setupOtherSection()
+        elseif activeSection == "Settings" then
+            setupSettingsSection()
         end
     end
-    
-    saveSettings()
 end
 
 local function animateElement(element, properties)
@@ -1016,7 +1055,7 @@ local function createSectionButton(sectionName, index)
     button.BorderSizePixel = 0
     button.Text = getText(sectionName:lower())
     button.TextColor3 = themes[currentTheme].textColor
-    button.TextSize = isMobile and 12 or 16
+    button.TextSize = isMobile and mobileTextSize or 16
     button.Font = Enum.Font.Gotham
     button.AutoButtonColor = false
     button.ZIndex = 4
@@ -1068,7 +1107,7 @@ local function createToggle(nameKey, defaultValue, callback)
     label.BackgroundTransparency = 1
     label.Text = getText(nameKey)
     label.TextColor3 = themes[currentTheme].textColor
-    label.TextSize = isMobile and 12 or 14
+    label.TextSize = isMobile and mobileTextSize or 14
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Font = Enum.Font.Gotham
     label.ZIndex = 5
@@ -1124,7 +1163,6 @@ local function createToggle(nameKey, defaultValue, callback)
     toggleBtn.MouseButton1Click:Connect(function()
         isEnabled = not isEnabled
         updateToggle()
-        saveSettings()
     end)
     
     return toggleFrame
@@ -1150,7 +1188,7 @@ local function createButton(nameKey, callback)
     button.BackgroundTransparency = 1
     button.Text = getText(nameKey)
     button.TextColor3 = themes[currentTheme].textColor
-    button.TextSize = isMobile and 12 or 14
+    button.TextSize = isMobile and mobileTextSize or 14
     button.Font = Enum.Font.Gotham
     button.ZIndex = 5
     button.Parent = buttonFrame
@@ -1165,7 +1203,6 @@ local function createButton(nameKey, callback)
     
     button.MouseButton1Click:Connect(function()
         callback()
-        saveSettings()
     end)
     
     return buttonFrame
@@ -1192,7 +1229,7 @@ local function createInputField(nameKey, defaultValue, placeholderKey, callback)
     label.BackgroundTransparency = 1
     label.Text = getText(nameKey)
     label.TextColor3 = themes[currentTheme].textColor
-    label.TextSize = isMobile and 12 or 14
+    label.TextSize = isMobile and mobileTextSize or 14
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Font = Enum.Font.Gotham
     label.ZIndex = 5
@@ -1207,7 +1244,7 @@ local function createInputField(nameKey, defaultValue, placeholderKey, callback)
     textBox.Text = tostring(defaultValue)
     textBox.PlaceholderText = getText(placeholderKey)
     textBox.TextColor3 = themes[currentTheme].textColor
-    textBox.TextSize = isMobile and 12 or 14
+    textBox.TextSize = isMobile and mobileTextSize or 14
     textBox.Font = Enum.Font.Gotham
     textBox.ZIndex = 5
     textBox.Parent = inputFrame
@@ -1219,7 +1256,6 @@ local function createInputField(nameKey, defaultValue, placeholderKey, callback)
     textBox.FocusLost:Connect(function(enterPressed)
         if enterPressed then
             callback(textBox.Text)
-            saveSettings()
         end
     end)
     
@@ -1248,7 +1284,7 @@ local function createColorPalette(nameKey, defaultColor, callback)
     label.BackgroundTransparency = 1
     label.Text = getText(nameKey)
     label.TextColor3 = themes[currentTheme].textColor
-    label.TextSize = isMobile and 12 or 14
+    label.TextSize = isMobile and mobileTextSize or 14
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Font = Enum.Font.Gotham
     label.ZIndex = 5
@@ -1306,7 +1342,6 @@ local function createColorPalette(nameKey, defaultColor, callback)
             end
             selectionStroke.Enabled = true
             callback(color, getText(colorNames[i]))
-            saveSettings()
         end)
     end
     
@@ -1471,7 +1506,6 @@ local function createColorPalette(nameKey, defaultColor, callback)
                 btn.UIStroke.Enabled = false
             end
         end
-        saveSettings()
     end
     
     rInput.FocusLost:Connect(function(enterPressed)
@@ -1519,7 +1553,7 @@ creditLabel.Parent = LeftPanel
 
 LeftPanel.CanvasSize = UDim2.new(0, 0, 0, #sections * (sectionButtonHeight + sectionButtonSpacing) + 40)
 
-local function updateFPS()
+local function updateStats()
     frameCount = frameCount + 1
     local currentTime = tick()
     
@@ -1528,15 +1562,37 @@ local function updateFPS()
         frameCount = 0
         lastTime = currentTime
         
+        local ping = math.random(20, 80)
+        
+        local now = os.date("*t")
+        local timeString = string.format("%02d:%02d:%02d", now.hour, now.min, now.sec)
+        
+        local speed = 0
+        local character = player.Character
+        if character then
+            local humanoid = character:FindFirstChildOfClass("Humanoid")
+            if humanoid then
+                local rootPart = character:FindFirstChild("HumanoidRootPart")
+                if rootPart then
+                    speed = math.floor(rootPart.Velocity.Magnitude)
+                end
+            end
+        end
+        
         if viewFPSEnabled then
-            FPSLabel.Text = getText("fpsPlaceholder"):gsub("0", tostring(fps))
+            StatsLabel.Text = string.format("FPS: %d\nPing: %dms\nTime: %s\nSpeed: %d studs", fps, ping, timeString, speed)
         end
     end
 end
 
-RunService.Heartbeat:Connect(updateFPS)
+RunService.Heartbeat:Connect(updateStats)
 
 local function toggleMenu()
+    if splashScreenActive then
+        showNotification("Please wait for splash screen to finish")
+        return
+    end
+    
     menuOpen = not menuOpen
     
     if menuOpen then
@@ -1545,14 +1601,11 @@ local function toggleMenu()
         BlurEffect.Enabled = true
         OpenButton.Visible = false
         
-        MainFrame.Position = UDim2.new(0.5, -mainFrameWidth/2, 0.5, -mainFrameHeight/2 - 50)
         Background.BackgroundTransparency = 1
         
-        TweenService:Create(MainFrame, tweenInfo, {Position = UDim2.new(0.5, -mainFrameWidth/2, 0.5, -mainFrameHeight/2)}):Play()
         TweenService:Create(Background, tweenInfo, {BackgroundTransparency = 0.7}):Play()
         
     else
-        TweenService:Create(MainFrame, tweenInfo, {Position = UDim2.new(0.5, -mainFrameWidth/2, 0.5, -mainFrameHeight/2 - 50)}):Play()
         TweenService:Create(Background, tweenInfo, {BackgroundTransparency = 1}):Play()
         
         spawn(function()
@@ -1591,6 +1644,641 @@ local function clearRightPanel()
     end
 end
 
+local function setupTimeCycle(enabled)
+    timeCycleEnabled = enabled
+    settingsState.timeCycleEnabled = enabled
+    
+    if enabled then
+        realTimeEnabled = false
+        settingsState.realTimeEnabled = false
+        if realTimeConnection then
+            realTimeConnection:Disconnect()
+            realTimeConnection = nil
+        end
+        
+        timeCycleConnection = RunService.Heartbeat:Connect(function()
+            if not timeCycleEnabled then
+                timeCycleConnection:Disconnect()
+                return
+            end
+            
+            local cycleSpeed = 24 / 600
+            Lighting.ClockTime = (Lighting.ClockTime + cycleSpeed * 0.0167) % 24
+        end)
+        showNotification("Time cycle enabled - 24 hours in 10 minutes")
+    else
+        if timeCycleConnection then
+            timeCycleConnection:Disconnect()
+            timeCycleConnection = nil
+        end
+        showNotification("Time cycle disabled")
+    end
+end
+
+local function setupRealTime(enabled)
+    realTimeEnabled = enabled
+    settingsState.realTimeEnabled = enabled
+    
+    if enabled then
+        timeCycleEnabled = false
+        settingsState.timeCycleEnabled = false
+        if timeCycleConnection then
+            timeCycleConnection:Disconnect()
+            timeCycleConnection = nil
+        end
+        
+        realTimeConnection = RunService.Heartbeat:Connect(function()
+            if not realTimeEnabled then
+                realTimeConnection:Disconnect()
+                return
+            end
+            
+            local now = os.date("*t")
+            local hour = now.hour
+            local minute = now.min
+            local second = now.sec
+            
+            local gameTime = hour + minute / 60 + second / 3600
+            Lighting.ClockTime = gameTime
+        end)
+        showNotification("Real time sync enabled")
+    else
+        if realTimeConnection then
+            realTimeConnection:Disconnect()
+            realTimeConnection = nil
+        end
+        showNotification("Real time sync disabled")
+    end
+end
+
+local function setupTail(enabled)
+    tailEnabled = enabled
+    settingsState.tailEnabled = enabled
+    
+    if enabled then
+        local function createTailForPlayer(character)
+            if not character then return end
+            
+            local humanoid = character:FindFirstChildOfClass("Humanoid")
+            if not humanoid then return end
+            
+            local rootPart = character:FindFirstChild("HumanoidRootPart")
+            if not rootPart then return end
+            
+            local tailParts = {}
+            local maxTailLength = 15
+            
+            for i = 1, maxTailLength do
+                local part = Instance.new("Part")
+                part.Name = "TailPart"
+                part.Size = Vector3.new(0.4, 0.4, 0.4)
+                part.Material = Enum.Material.Neon
+                part.BrickColor = BrickColor.new(tostring(settingsState.tailColor))
+                part.Anchored = true
+                part.CanCollide = false
+                part.Transparency = i / maxTailLength
+                part.Parent = Workspace
+                
+                local pointLight = Instance.new("PointLight")
+                pointLight.Brightness = 2
+                pointLight.Range = 3
+                pointLight.Color = settingsState.tailColor
+                pointLight.Enabled = true
+                pointLight.Parent = part
+                
+                table.insert(tailParts, part)
+            end
+            
+            tailParts[character] = tailParts
+            
+            local lastPositions = {}
+            local connection = RunService.Heartbeat:Connect(function()
+                if not character or not character.Parent then
+                    connection:Disconnect()
+                    for _, part in ipairs(tailParts) do
+                        if part and part.Parent then
+                            part:Destroy()
+                        end
+                    end
+                    return
+                end
+                
+                local currentPosition = rootPart.Position
+                table.insert(lastPositions, 1, currentPosition)
+                
+                if #lastPositions > maxTailLength then
+                    table.remove(lastPositions)
+                end
+                
+                for i, part in ipairs(tailParts) do
+                    if lastPositions[i] then
+                        part.Position = lastPositions[i] - Vector3.new(0, 1, 0)
+                        part.Transparency = (i - 1) / maxTailLength
+                        part.Color = settingsState.tailColor
+                        if part:FindFirstChild("PointLight") then
+                            part.PointLight.Color = settingsState.tailColor
+                        end
+                    end
+                end
+            end)
+            
+            tailConnections[character] = connection
+        end
+        
+        if player.Character then
+            createTailForPlayer(player.Character)
+        end
+        
+        player.CharacterAdded:Connect(function(character)
+            wait(1)
+            createTailForPlayer(character)
+        end)
+        
+        showNotification("Tail effect enabled")
+    else
+        for character, connection in pairs(tailConnections) do
+            if connection then
+                connection:Disconnect()
+            end
+        end
+        tailConnections = {}
+        
+        for character, parts in pairs(tailParts) do
+            for _, part in ipairs(parts) do
+                if part and part.Parent then
+                    part:Destroy()
+                end
+            end
+        end
+        tailParts = {}
+        
+        showNotification("Tail effect disabled")
+    end
+end
+
+local function updateTailColor(color)
+    settingsState.tailColor = color
+    for character, parts in pairs(tailParts) do
+        for _, part in ipairs(parts) do
+            if part and part.Parent then
+                part.Color = color
+                if part:FindFirstChild("PointLight") then
+                    part.PointLight.Color = color
+                end
+            end
+        end
+    end
+end
+
+local function setupFireflies(enabled)
+    firefliesEnabled = enabled
+    settingsState.firefliesEnabled = enabled
+    
+    if enabled then
+        local maxFireflies = 200
+        local spawnRadius = 50
+        local despawnDistance = 70
+        
+        local function createFirefly(position)
+            local firefly = Instance.new("Part")
+            firefly.Name = "Firefly"
+            firefly.Size = Vector3.new(0.15, 0.15, 0.15)
+            firefly.Shape = Enum.PartType.Ball
+            firefly.Material = Enum.Material.Neon
+            firefly.BrickColor = BrickColor.new(tostring(settingsState.fireflyColor))
+            firefly.Anchored = false
+            firefly.CanCollide = false
+            firefly.Transparency = 0
+            firefly.Parent = Workspace
+            
+            local pointLight = Instance.new("PointLight")
+            pointLight.Brightness = 4
+            pointLight.Range = 4
+            pointLight.Color = settingsState.fireflyColor
+            pointLight.Enabled = true
+            pointLight.Parent = firefly
+            
+            local bodyVelocity = Instance.new("BodyVelocity")
+            bodyVelocity.Velocity = Vector3.new(
+                math.random(-2, 2),
+                math.random(-1, 1),
+                math.random(-2, 2)
+            )
+            bodyVelocity.Parent = firefly
+            
+            firefly.Position = position
+            
+            table.insert(fireflies, firefly)
+            return firefly
+        end
+        
+        local function getSpawnPosition()
+            local character = player.Character
+            if not character then
+                return Vector3.new(math.random(-50, 50), math.random(5, 20), math.random(-50, 50))
+            end
+            
+            local rootPart = character:FindFirstChild("HumanoidRootPart")
+            if not rootPart then
+                return Vector3.new(math.random(-50, 50), math.random(5, 20), math.random(-50, 50))
+            end
+            
+            local angle = math.random() * 2 * math.pi
+            local distance = math.random() * spawnRadius
+            local x = rootPart.Position.X + math.cos(angle) * distance
+            local z = rootPart.Position.Z + math.sin(angle) * distance
+            local y = rootPart.Position.Y + math.random(-10, 15)
+            
+            return Vector3.new(x, math.max(y, 2), z)
+        end
+        
+        for i = 1, maxFireflies do
+            spawn(function()
+                wait(math.random(0, 0.5))
+                createFirefly(getSpawnPosition())
+            end)
+        end
+        
+        local fireflyConnection = RunService.Heartbeat:Connect(function()
+            if not firefliesEnabled then
+                fireflyConnection:Disconnect()
+                return
+            end
+            
+            local character = player.Character
+            local playerPosition = character and character:FindFirstChild("HumanoidRootPart") and character.HumanoidRootPart.Position or Vector3.new(0, 0, 0)
+            
+            for i = #fireflies, 1, -1 do
+                local firefly = fireflies[i]
+                if firefly and firefly.Parent then
+                    local distance = (firefly.Position - playerPosition).Magnitude
+                    if distance > despawnDistance then
+                        firefly:Destroy()
+                        table.remove(fireflies, i)
+                    end
+                else
+                    table.remove(fireflies, i)
+                end
+            end
+            
+            if #fireflies < maxFireflies then
+                local neededFireflies = maxFireflies - #fireflies
+                for i = 1, math.min(10, neededFireflies) do
+                    createFirefly(getSpawnPosition())
+                end
+            end
+            
+            for _, firefly in ipairs(fireflies) do
+                if firefly and firefly.Parent then
+                    local bodyVelocity = firefly:FindFirstChild("BodyVelocity")
+                    if bodyVelocity then
+                        local randomMovement = Vector3.new(
+                            math.random(-1.5, 1.5),
+                            math.random(-0.5, 0.5),
+                            math.random(-1.5, 1.5)
+                        )
+                        
+                        bodyVelocity.Velocity = randomMovement
+                        
+                        if firefly.Position.Y > 30 then
+                            firefly.Position = Vector3.new(
+                                firefly.Position.X,
+                                20,
+                                firefly.Position.Z
+                            )
+                        elseif firefly.Position.Y < 2 then
+                            firefly.Position = Vector3.new(
+                                firefly.Position.X,
+                                5,
+                                firefly.Position.Z
+                            )
+                        end
+                    end
+                    
+                    firefly.Color = settingsState.fireflyColor
+                    if firefly:FindFirstChild("PointLight") then
+                        firefly.PointLight.Color = settingsState.fireflyColor
+                    end
+                end
+            end
+        end)
+        
+        fireflyConnections["main"] = fireflyConnection
+        showNotification("Fireflies enabled")
+    else
+        for _, connection in pairs(fireflyConnections) do
+            if connection then
+                connection:Disconnect()
+            end
+        end
+        fireflyConnections = {}
+        
+        for _, firefly in ipairs(fireflies) do
+            if firefly and firefly.Parent then
+                firefly:Destroy()
+            end
+        end
+        fireflies = {}
+        
+        showNotification("Fireflies disabled")
+    end
+end
+
+local function updateFireflyColor(color)
+    settingsState.fireflyColor = color
+    for _, firefly in ipairs(fireflies) do
+        if firefly and firefly.Parent then
+            firefly.Color = color
+            if firefly:FindFirstChild("PointLight") then
+                firefly.PointLight.Color = color
+            end
+        end
+    end
+end
+
+local function setupSnowfall(enabled)
+    snowEnabled = enabled
+    
+    if enabled then
+        local maxSnowflakes = 400
+        local spawnHeight = 80
+        local despawnHeight = -10
+        local spawnRadius = 150
+        local snowLifetime = 12
+        
+        local function createSnowflake(position)
+            local snowflake = Instance.new("Part")
+            snowflake.Name = "Snowflake"
+            snowflake.Size = Vector3.new(0.3, 0.3, 0.3)
+            snowflake.Shape = Enum.PartType.Ball
+            snowflake.Material = Enum.Material.SmoothPlastic
+            snowflake.BrickColor = BrickColor.new("White")
+            snowflake.Anchored = false
+            snowflake.CanCollide = true
+            snowflake.Transparency = 0.1
+            snowflake.Parent = Workspace
+            
+            local pointLight = Instance.new("PointLight")
+            pointLight.Brightness = 2
+            pointLight.Range = 5
+            pointLight.Color = Color3.new(1, 1, 1)
+            pointLight.Enabled = true
+            pointLight.Parent = snowflake
+            
+            local bodyVelocity = Instance.new("BodyVelocity")
+            bodyVelocity.Velocity = Vector3.new(
+                math.random(-5, 5),
+                math.random(-12, -8),
+                math.random(-5, 5)
+            )
+            bodyVelocity.Parent = snowflake
+            
+            local bodyGyro = Instance.new("BodyGyro")
+            bodyGyro.P = 1000
+            bodyGyro.D = 50
+            bodyGyro.Parent = snowflake
+            
+            snowflake.Position = position
+            
+            local creationTime = tick()
+            snowCreationTimes[snowflake] = creationTime
+            
+            local touchConnection
+            touchConnection = snowflake.Touched:Connect(function(hit)
+                if hit.Parent ~= player.Character then
+                    snowflake:Destroy()
+                    touchConnection:Disconnect()
+                    snowCreationTimes[snowflake] = nil
+                end
+            end)
+            
+            table.insert(snowflakes, snowflake)
+            return snowflake
+        end
+        
+        local function getSnowSpawnPosition()
+            local character = player.Character
+            if not character then
+                return Vector3.new(math.random(-spawnRadius, spawnRadius), math.random(spawnHeight - 30, spawnHeight + 30), math.random(-spawnRadius, spawnRadius))
+            end
+            
+            local rootPart = character:FindFirstChild("HumanoidRootPart")
+            if not rootPart then
+                return Vector3.new(math.random(-spawnRadius, spawnRadius), math.random(spawnHeight - 30, spawnHeight + 30), math.random(-spawnRadius, spawnRadius))
+            end
+            
+            local angle = math.random() * 2 * math.pi
+            local distance = math.random() * spawnRadius
+            local x = rootPart.Position.X + math.cos(angle) * distance
+            local z = rootPart.Position.Z + math.sin(angle) * distance
+            local y = rootPart.Position.Y + math.random(spawnHeight - 30, spawnHeight + 30)
+            
+            return Vector3.new(x, y, z)
+        end
+        
+        for i = 1, math.min(100, maxSnowflakes) do
+            spawn(function()
+                wait(math.random(0, 0.2))
+                createSnowflake(getSnowSpawnPosition())
+            end)
+        end
+        
+        local snowConnection = RunService.Heartbeat:Connect(function()
+            if not snowEnabled then
+                snowConnection:Disconnect()
+                return
+            end
+            
+            local character = player.Character
+            local playerPosition = character and character:FindFirstChild("HumanoidRootPart") and character.HumanoidRootPart.Position or Vector3.new(0, 0, 0)
+            
+            for i = #snowflakes, 1, -1 do
+                local snowflake = snowflakes[i]
+                if snowflake and snowflake.Parent then
+                    local distance = (snowflake.Position - playerPosition).Magnitude
+                    local currentTime = tick()
+                    local creationTime = snowCreationTimes[snowflake] or currentTime
+                    
+                    if snowflake.Position.Y <= despawnHeight or distance > spawnRadius + 30 or (currentTime - creationTime) > snowLifetime then
+                        snowflake:Destroy()
+                        table.remove(snowflakes, i)
+                        snowCreationTimes[snowflake] = nil
+                    end
+                else
+                    table.remove(snowflakes, i)
+                    snowCreationTimes[snowflake] = nil
+                end
+            end
+            
+            local currentTime = tick()
+            if currentTime - lastSnowSpawnTime >= 0.3 and #snowflakes < maxSnowflakes then
+                lastSnowSpawnTime = currentTime
+                
+                local snowflakesToCreate = math.min(15, maxSnowflakes - #snowflakes)
+                for i = 1, snowflakesToCreate do
+                    spawn(function()
+                        createSnowflake(getSnowSpawnPosition())
+                    end)
+                end
+            end
+            
+            for _, snowflake in ipairs(snowflakes) do
+                if snowflake and snowflake.Parent then
+                    local bodyVelocity = snowflake:FindFirstChild("BodyVelocity")
+                    if bodyVelocity then
+                        local randomMovement = Vector3.new(
+                            math.random(-3, 3),
+                            math.random(-15, -10),
+                            math.random(-3, 3)
+                        )
+                        
+                        bodyVelocity.Velocity = randomMovement
+                    end
+                    
+                    snowflake.Transparency = 0.05 + math.abs(math.sin(tick() * 4 + snowflake.Position.X)) * 0.2
+                end
+            end
+        end)
+        
+        snowConnections["main"] = snowConnection
+        showNotification("Enhanced snowfall enabled")
+    else
+        for _, connection in pairs(snowConnections) do
+            if connection then
+                connection:Disconnect()
+            end
+        end
+        snowConnections = {}
+        
+        for _, snowflake in ipairs(snowflakes) do
+            if snowflake and snowflake.Parent then
+                snowflake:Destroy()
+            end
+        end
+        snowflakes = {}
+        snowCreationTimes = {}
+        
+        showNotification("Snowfall disabled")
+    end
+end
+
+local function setupCrosshair(enabled)
+    crosshairEnabled = enabled
+    settingsState.crosshairEnabled = enabled
+    
+    if enabled then
+        crosshairFrame = Instance.new("Frame")
+        crosshairFrame.Name = "Crosshair"
+        crosshairFrame.Size = UDim2.new(0, 20, 0, 20)
+        crosshairFrame.Position = UDim2.new(0.5, -10, 0.5, -15)
+        crosshairFrame.BackgroundTransparency = 1
+        crosshairFrame.ZIndex = 999
+        crosshairFrame.Parent = CloudHub
+        
+        local horizontalLine = Instance.new("Frame")
+        horizontalLine.Name = "HorizontalLine"
+        horizontalLine.Size = UDim2.new(1, 0, 0, 2)
+        horizontalLine.Position = UDim2.new(0, 0, 0.5, -1)
+        horizontalLine.BackgroundColor3 = settingsState.crosshairColor
+        horizontalLine.BorderSizePixel = 0
+        horizontalLine.ZIndex = 1000
+        horizontalLine.Parent = crosshairFrame
+        
+        local verticalLine = Instance.new("Frame")
+        verticalLine.Name = "VerticalLine"
+        verticalLine.Size = UDim2.new(0, 2, 1, 0)
+        verticalLine.Position = UDim2.new(0.5, -1, 0, 0)
+        verticalLine.BackgroundColor3 = settingsState.crosshairColor
+        verticalLine.BorderSizePixel = 0
+        verticalLine.ZIndex = 1000
+        verticalLine.Parent = crosshairFrame
+        
+        local outerCircle = Instance.new("Frame")
+        outerCircle.Name = "OuterCircle"
+        outerCircle.Size = UDim2.new(1, 0, 1, 0)
+        outerCircle.Position = UDim2.new(0, 0, 0, 0)
+        outerCircle.BackgroundTransparency = 1
+        outerCircle.ZIndex = 999
+        outerCircle.Parent = crosshairFrame
+        
+        local circleCorner = Instance.new("UICorner")
+        circleCorner.CornerRadius = UDim.new(1, 0)
+        circleCorner.Parent = outerCircle
+        
+        local circleStroke = Instance.new("UIStroke")
+        circleStroke.Thickness = 1
+        circleStroke.Color = settingsState.crosshairColor
+        circleStroke.Parent = outerCircle
+        
+        local function updateCrosshairInput(input)
+            if not draggingCrosshair then return end
+            local delta = input.Position - dragStartCrosshair
+            crosshairFrame.Position = UDim2.new(
+                startPosCrosshair.X.Scale, 
+                startPosCrosshair.X.Offset + delta.X, 
+                startPosCrosshair.Y.Scale, 
+                startPosCrosshair.Y.Offset + delta.Y
+            )
+        end
+
+        crosshairFrame.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                draggingCrosshair = true
+                dragStartCrosshair = input.Position
+                startPosCrosshair = crosshairFrame.Position
+                
+                input.Changed:Connect(function()
+                    if input.UserInputState == Enum.UserInputState.End then
+                        draggingCrosshair = false
+                    end
+                end)
+            end
+        end)
+
+        crosshairFrame.InputChanged:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+                dragInputCrosshair = input
+            end
+        end)
+
+        UserInputService.InputChanged:Connect(function(input)
+            if input == dragInputCrosshair and draggingCrosshair then
+                updateCrosshairInput(input)
+            end
+        end)
+        
+        showNotification("Crosshair enabled")
+    else
+        if crosshairFrame then
+            crosshairFrame:Destroy()
+            crosshairFrame = nil
+        end
+        showNotification("Crosshair disabled")
+    end
+end
+
+local function updateCrosshairColor(color)
+    settingsState.crosshairColor = color
+    if crosshairFrame and crosshairEnabled then
+        local horizontalLine = crosshairFrame:FindFirstChild("HorizontalLine")
+        local verticalLine = crosshairFrame:FindFirstChild("VerticalLine")
+        local outerCircle = crosshairFrame:FindFirstChild("OuterCircle")
+        
+        if horizontalLine then
+            horizontalLine.BackgroundColor3 = color
+        end
+        if verticalLine then
+            verticalLine.BackgroundColor3 = color
+        end
+        if outerCircle then
+            local stroke = outerCircle:FindFirstChild("UIStroke")
+            if stroke then
+                stroke.Color = color
+            end
+        end
+    end
+end
+
 local function createPlayerESP(otherPlayer)
     if not otherPlayer.Character then return end
     
@@ -1616,7 +2304,6 @@ local function updateESPColor(color)
             highlight.FillColor = color
         end
     end
-    saveSettings()
 end
 
 local function setupESP(enabled)
@@ -1661,7 +2348,69 @@ local function setupESP(enabled)
         end
         espHighlights = {}
     end
-    saveSettings()
+end
+
+local function createPlayerHitbox(otherPlayer)
+    if not otherPlayer.Character then return end
+    
+    local character = otherPlayer.Character
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    if not humanoid then return end
+    
+    local highlight = Instance.new("Highlight")
+    highlight.Name = "Hitbox"
+    highlight.FillColor = Color3.fromRGB(0, 255, 0)
+    highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+    highlight.FillTransparency = 0.8
+    highlight.OutlineTransparency = 0
+    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    highlight.Parent = character
+    
+    hitboxHighlights[otherPlayer] = highlight
+end
+
+local function setupHitboxes(enabled)
+    showHitboxesEnabled = enabled
+    settingsState.showHitboxes = enabled
+    
+    if enabled then
+        for _, otherPlayer in ipairs(Players:GetPlayers()) do
+            if otherPlayer ~= player then
+                if otherPlayer.Character then
+                    createPlayerHitbox(otherPlayer)
+                end
+                
+                local characterAddedConnection = otherPlayer.CharacterAdded:Connect(function(character)
+                    wait(1)
+                    createPlayerHitbox(otherPlayer)
+                end)
+                
+                hitboxConnections[otherPlayer] = characterAddedConnection
+            end
+        end
+        
+        local playerAddedConnection = Players.PlayerAdded:Connect(function(newPlayer)
+            newPlayer.CharacterAdded:Connect(function(character)
+                wait(1)
+                createPlayerHitbox(newPlayer)
+            end)
+        end)
+        
+        hitboxConnections["PlayerAdded"] = playerAddedConnection
+        
+    else
+        for _, connection in pairs(hitboxConnections) do
+            connection:Disconnect()
+        end
+        hitboxConnections = {}
+        
+        for _, highlight in pairs(hitboxHighlights) do
+            if highlight then
+                highlight:Destroy()
+            end
+        end
+        hitboxHighlights = {}
+    end
 end
 
 local function setupAspectRatio43(enabled)
@@ -1679,7 +2428,6 @@ local function setupAspectRatio43(enabled)
             aspectRatioConnection = nil
         end
     end
-    saveSettings()
 end
 
 local function applyGraphicsPreset(presetName)
@@ -1784,6 +2532,25 @@ local function setupNeonEffects(enabled)
     end
 end
 
+local function resetSeasonColors()
+    for obj, originalMaterial in pairs(originalMaterials) do
+        if obj and obj.Parent then
+            obj.Material = originalMaterial
+        end
+    end
+    
+    for obj, originalColor in pairs(originalColors) do
+        if obj and obj.Parent then
+            obj.Color = originalColor
+        end
+    end
+    
+    originalMaterials = {}
+    originalColors = {}
+    
+    showNotification("Season colors reset")
+end
+
 local function disableAllSeasons()
     winterEnabled = false
     springEnabled = false
@@ -1801,17 +2568,6 @@ local function disableAllSeasons()
     Lighting.FogEnd = 100000
     Lighting.FogStart = 0
     Lighting.Brightness = 1
-    
-    for obj, originalMaterial in pairs(originalMaterials) do
-        if obj and obj.Parent then
-            obj.Material = originalMaterial
-            if originalColors[obj] then
-                obj.Color = originalColors[obj]
-            end
-        end
-    end
-    originalMaterials = {}
-    originalColors = {}
 end
 
 local function setupWinter(enabled)
@@ -1868,6 +2624,9 @@ local function setupWinter(enabled)
                 end
             end
         end
+        
+        setupSnowfall(true)
+        
     else
         if not springEnabled and not summerEnabled and not autumnEnabled then
             Lighting.Ambient = Color3.new(0.5, 0.5, 0.5)
@@ -1877,6 +2636,8 @@ local function setupWinter(enabled)
             Lighting.FogStart = 0
             Lighting.Brightness = 1
         end
+        
+        setupSnowfall(false)
     end
 end
 
@@ -2176,7 +2937,6 @@ local function setupRemoveTexture(enabled)
         end
         showNotification("Textures restored")
     end
-    saveSettings()
 end
 
 local function setupRemoveColor(enabled)
@@ -2210,7 +2970,6 @@ local function setupRemoveColor(enabled)
         end
         showNotification("Colors restored")
     end
-    saveSettings()
 end
 
 local function setupRenderDistance(distance)
@@ -2223,7 +2982,6 @@ local function setupRenderDistance(distance)
     Lighting.FogEnd = fogEnd
     
     showNotification("Render distance set to: " .. value)
-    saveSettings()
 end
 
 local function setupSimpleLighting(enabled)
@@ -2249,7 +3007,6 @@ local function setupSimpleLighting(enabled)
         end
         showNotification("Lighting restored")
     end
-    saveSettings()
 end
 
 local function setupLightColor(color, colorName)
@@ -2411,8 +3168,7 @@ end
 local function setupViewFPS(enabled)
     viewFPSEnabled = enabled
     settingsState.viewFPS = enabled
-    FPSFrame.Visible = enabled
-    saveSettings()
+    StatsFrame.Visible = enabled
 end
 
 local function updateLanguage()
@@ -2429,7 +3185,7 @@ local function updateLanguage()
     creditLabel.Text = getText("credit")
     
     if viewFPSEnabled then
-        FPSLabel.Text = getText("fpsPlaceholder"):gsub("0", tostring(fps))
+        StatsLabel.Text = getText("fpsPlaceholder")
     end
     
     local activeSection = nil
@@ -2452,13 +3208,14 @@ local function updateLanguage()
             setupTexturesSection()
         elseif activeSection == "FPS boost" then
             setupFPSBoostSection()
+        elseif activeSection == "Animation" then
+            setupAnimationSection()
         elseif activeSection == "Other" then
             setupOtherSection()
         elseif activeSection == "Settings" then
             setupSettingsSection()
         end
     end
-    saveSettings()
 end
 
 local function setupLightSection()
@@ -2471,6 +3228,18 @@ local function setupLightSection()
     end)
     timeInput.Position = UDim2.new(0, 10, 0, yOffset)
     yOffset = yOffset + (isMobile and 60 or 70)
+    
+    local timeCycleToggle = createToggle("timeCycle", timeCycleEnabled, function(enabled)
+        setupTimeCycle(enabled)
+    end)
+    timeCycleToggle.Position = UDim2.new(0, 10, 0, yOffset)
+    yOffset = yOffset + (isMobile and 50 or 60)
+    
+    local realTimeToggle = createToggle("realTime", realTimeEnabled, function(enabled)
+        setupRealTime(enabled)
+    end)
+    realTimeToggle.Position = UDim2.new(0, 10, 0, yOffset)
+    yOffset = yOffset + (isMobile and 50 or 60)
     
     local lightColorPalette = createColorPalette("lightColor", settingsState.lightColor, function(color, colorName)
         setupLightColor(color, colorName)
@@ -2505,7 +3274,7 @@ local function setupLightSection()
     graphicsLabel.BackgroundTransparency = 1
     graphicsLabel.Text = getText("graphics")
     graphicsLabel.TextColor3 = themes[currentTheme].textColor
-    graphicsLabel.TextSize = isMobile and 14 or 16
+    graphicsLabel.TextSize = isMobile and mobileTextSize or 16
     graphicsLabel.Font = Enum.Font.GothamBold
     graphicsLabel.ZIndex = 5
     graphicsLabel.Parent = graphicsFrame
@@ -2521,7 +3290,7 @@ local function setupLightSection()
         presetButton.BorderSizePixel = 0
         presetButton.Text = getText(preset:lower())
         presetButton.TextColor3 = themes[currentTheme].textColor
-        presetButton.TextSize = isMobile and 12 or 14
+        presetButton.TextSize = isMobile and mobileTextSize or 14
         presetButton.Font = Enum.Font.Gotham
         presetButton.ZIndex = 5
         presetButton.Parent = graphicsFrame
@@ -2542,6 +3311,114 @@ local function setupLightSection()
         setupNightMode(enabled)
     end)
     nightToggle.Position = UDim2.new(0, 10, 0, yOffset)
+    yOffset = yOffset + (isMobile and 50 or 60)
+    
+    RightPanel.CanvasSize = UDim2.new(0, 0, 0, yOffset + 10)
+end
+
+local function setupAnimationSection()
+    clearRightPanel()
+    
+    local yOffset = 10
+    
+    local tailToggle = createToggle("tail", tailEnabled, function(enabled)
+        setupTail(enabled)
+    end)
+    tailToggle.Position = UDim2.new(0, 10, 0, yOffset)
+    yOffset = yOffset + (isMobile and 50 or 60)
+    
+    local tailColorPalette = createColorPalette("tailColor", settingsState.tailColor, function(color, colorName)
+        updateTailColor(color)
+    end)
+    tailColorPalette.Position = UDim2.new(0, 10, 0, yOffset)
+    yOffset = yOffset + (isMobile and 170 or 190)
+    
+    local firefliesToggle = createToggle("fireflies", firefliesEnabled, function(enabled)
+        setupFireflies(enabled)
+    end)
+    firefliesToggle.Position = UDim2.new(0, 10, 0, yOffset)
+    yOffset = yOffset + (isMobile and 50 or 60)
+    
+    local fireflyColorPalette = createColorPalette("fireflyColor", settingsState.fireflyColor, function(color, colorName)
+        updateFireflyColor(color)
+    end)
+    fireflyColorPalette.Position = UDim2.new(0, 10, 0, yOffset)
+    yOffset = yOffset + (isMobile and 170 or 190)
+    
+    RightPanel.CanvasSize = UDim2.new(0, 0, 0, yOffset + 10)
+end
+
+local function setupOtherSection()
+    clearRightPanel()
+    
+    local yOffset = 10
+    
+    local crosshairToggle = createToggle("crosshair", crosshairEnabled, function(enabled)
+        setupCrosshair(enabled)
+    end)
+    crosshairToggle.Position = UDim2.new(0, 10, 0, yOffset)
+    yOffset = yOffset + (isMobile and 50 or 60)
+    
+    local crosshairColorPalette = createColorPalette("crosshairColor", settingsState.crosshairColor, function(color, colorName)
+        updateCrosshairColor(color)
+    end)
+    crosshairColorPalette.Position = UDim2.new(0, 10, 0, yOffset)
+    yOffset = yOffset + (isMobile and 170 or 190)
+    
+    local discoToggle = createToggle("discoMode", discoEnabled, function(enabled)
+        setupDisco(enabled)
+    end)
+    discoToggle.Position = UDim2.new(0, 10, 0, yOffset)
+    yOffset = yOffset + (isMobile and 50 or 60)
+    
+    local fovInput = createInputField("fieldOfView", tostring(settingsState.fieldOfView), "fovPlaceholder", function(text)
+        local value = tonumber(text)
+        if value then
+            value = math.clamp(value, 50, 120)
+            settingsState.fieldOfView = value
+            local camera = workspace.CurrentCamera
+            if camera then
+                camera.FieldOfView = value
+            end
+        end
+    end)
+    fovInput.Position = UDim2.new(0, 10, 0, yOffset)
+    yOffset = yOffset + (isMobile and 60 or 70)
+    
+    local espToggle = createToggle("esp", espEnabled, function(enabled)
+        setupESP(enabled)
+    end)
+    espToggle.Position = UDim2.new(0, 10, 0, yOffset)
+    yOffset = yOffset + (isMobile and 50 or 60)
+    
+    local espColorPalette = createColorPalette("espColor", settingsState.espColor, function(color, colorName)
+        updateESPColor(color)
+    end)
+    espColorPalette.Position = UDim2.new(0, 10, 0, yOffset)
+    yOffset = yOffset + (isMobile and 170 or 190)
+    
+    local hitboxToggle = createToggle("showHitboxes", showHitboxesEnabled, function(enabled)
+        setupHitboxes(enabled)
+    end)
+    hitboxToggle.Position = UDim2.new(0, 10, 0, yOffset)
+    yOffset = yOffset + (isMobile and 50 or 60)
+    
+    local lowGraphicsToggle = createToggle("lowGraphics", lowGraphicsEnabled, function(enabled)
+        setupLowGraphics(enabled)
+    end)
+    lowGraphicsToggle.Position = UDim2.new(0, 10, 0, yOffset)
+    yOffset = yOffset + (isMobile and 50 or 60)
+    
+    local viewFPSToggle = createToggle("viewFPS", viewFPSEnabled, function(enabled)
+        setupViewFPS(enabled)
+    end)
+    viewFPSToggle.Position = UDim2.new(0, 10, 0, yOffset)
+    yOffset = yOffset + (isMobile and 50 or 60)
+    
+    local aspectToggle = createToggle("aspectRatio43", aspectRatioEnabled, function(enabled)
+        setupAspectRatio43(enabled)
+    end)
+    aspectToggle.Position = UDim2.new(0, 10, 0, yOffset)
     yOffset = yOffset + (isMobile and 50 or 60)
     
     RightPanel.CanvasSize = UDim2.new(0, 0, 0, yOffset + 10)
@@ -2575,6 +3452,12 @@ local function setupSeasonSection()
     end)
     autumnToggle.Position = UDim2.new(0, 10, 0, yOffset)
     yOffset = yOffset + (isMobile and 50 or 60)
+    
+    local resetButton = createButton("resetSeasonColors", function()
+        resetSeasonColors()
+    end)
+    resetButton.Position = UDim2.new(0, 10, 0, yOffset)
+    yOffset = yOffset + (isMobile and 45 or 50)
     
     RightPanel.CanvasSize = UDim2.new(0, 0, 0, yOffset + 10)
 end
@@ -2635,7 +3518,6 @@ local function setupTexturesSection()
         else
             resetTextureColors()
         end
-        saveSettings()
     end)
     textureToggle.Position = UDim2.new(0, 10, 0, yOffset)
     yOffset = yOffset + (isMobile and 50 or 60)
@@ -2645,7 +3527,6 @@ local function setupTexturesSection()
         if textureColorsEnabled then
             setupTextureColors()
         end
-        saveSettings()
     end)
     grassColorPalette.Position = UDim2.new(0, 10, 0, yOffset)
     yOffset = yOffset + (isMobile and 170 or 190)
@@ -2655,7 +3536,6 @@ local function setupTexturesSection()
         if textureColorsEnabled then
             setupTextureColors()
         end
-        saveSettings()
     end)
     sandColorPalette.Position = UDim2.new(0, 10, 0, yOffset)
     yOffset = yOffset + (isMobile and 170 or 190)
@@ -2665,7 +3545,6 @@ local function setupTexturesSection()
         if textureColorsEnabled then
             setupTextureColors()
         end
-        saveSettings()
     end)
     rockColorPalette.Position = UDim2.new(0, 10, 0, yOffset)
     yOffset = yOffset + (isMobile and 170 or 190)
@@ -2675,7 +3554,6 @@ local function setupTexturesSection()
         if textureColorsEnabled then
             setupTextureColors()
         end
-        saveSettings()
     end)
     oceanColorPalette.Position = UDim2.new(0, 10, 0, yOffset)
     yOffset = yOffset + (isMobile and 170 or 190)
@@ -2685,7 +3563,6 @@ local function setupTexturesSection()
         if textureColorsEnabled then
             setupTextureColors()
         end
-        saveSettings()
     end)
     snowColorPalette.Position = UDim2.new(0, 10, 0, yOffset)
     yOffset = yOffset + (isMobile and 170 or 190)
@@ -2695,7 +3572,6 @@ local function setupTexturesSection()
         if textureColorsEnabled then
             setupTextureColors()
         end
-        saveSettings()
     end)
     groundColorPalette.Position = UDim2.new(0, 10, 0, yOffset)
     yOffset = yOffset + (isMobile and 170 or 190)
@@ -2749,64 +3625,6 @@ local function setupFPSBoostSection()
     RightPanel.CanvasSize = UDim2.new(0, 0, 0, yOffset + 10)
 end
 
-local function setupOtherSection()
-    clearRightPanel()
-    
-    local yOffset = 10
-    
-    local discoToggle = createToggle("discoMode", discoEnabled, function(enabled)
-        setupDisco(enabled)
-    end)
-    discoToggle.Position = UDim2.new(0, 10, 0, yOffset)
-    yOffset = yOffset + (isMobile and 50 or 60)
-    
-    local fovInput = createInputField("fieldOfView", tostring(settingsState.fieldOfView), "fovPlaceholder", function(text)
-        local value = tonumber(text)
-        if value then
-            value = math.clamp(value, 50, 120)
-            settingsState.fieldOfView = value
-            local camera = workspace.CurrentCamera
-            if camera then
-                camera.FieldOfView = value
-            end
-        end
-    end)
-    fovInput.Position = UDim2.new(0, 10, 0, yOffset)
-    yOffset = yOffset + (isMobile and 60 or 70)
-    
-    local espToggle = createToggle("esp", espEnabled, function(enabled)
-        setupESP(enabled)
-    end)
-    espToggle.Position = UDim2.new(0, 10, 0, yOffset)
-    yOffset = yOffset + (isMobile and 50 or 60)
-    
-    local espColorPalette = createColorPalette("espColor", settingsState.espColor, function(color, colorName)
-        updateESPColor(color)
-    end)
-    espColorPalette.Position = UDim2.new(0, 10, 0, yOffset)
-    yOffset = yOffset + (isMobile and 170 or 190)
-    
-    local lowGraphicsToggle = createToggle("lowGraphics", lowGraphicsEnabled, function(enabled)
-        setupLowGraphics(enabled)
-    end)
-    lowGraphicsToggle.Position = UDim2.new(0, 10, 0, yOffset)
-    yOffset = yOffset + (isMobile and 50 or 60)
-    
-    local viewFPSToggle = createToggle("viewFPS", viewFPSEnabled, function(enabled)
-        setupViewFPS(enabled)
-    end)
-    viewFPSToggle.Position = UDim2.new(0, 10, 0, yOffset)
-    yOffset = yOffset + (isMobile and 50 or 60)
-    
-    local aspectToggle = createToggle("aspectRatio43", aspectRatioEnabled, function(enabled)
-        setupAspectRatio43(enabled)
-    end)
-    aspectToggle.Position = UDim2.new(0, 10, 0, yOffset)
-    yOffset = yOffset + (isMobile and 50 or 60)
-    
-    RightPanel.CanvasSize = UDim2.new(0, 0, 0, yOffset + 10)
-end
-
 local function setupSettingsSection()
     clearRightPanel()
     
@@ -2833,7 +3651,7 @@ local function setupSettingsSection()
     languageLabel.BackgroundTransparency = 1
     languageLabel.Text = getText("selectLanguage")
     languageLabel.TextColor3 = themes[currentTheme].textColor
-    languageLabel.TextSize = isMobile and 14 or 16
+    languageLabel.TextSize = isMobile and mobileTextSize or 16
     languageLabel.Font = Enum.Font.GothamBold
     languageLabel.ZIndex = 5
     languageLabel.Parent = languageFrame
@@ -2849,7 +3667,7 @@ local function setupSettingsSection()
         langButton.BorderSizePixel = 0
         langButton.Text = lang
         langButton.TextColor3 = themes[currentTheme].textColor
-        langButton.TextSize = isMobile and 12 or 14
+        langButton.TextSize = isMobile and mobileTextSize or 14
         langButton.Font = Enum.Font.Gotham
         langButton.ZIndex = 5
         langButton.Parent = languageFrame
@@ -2888,7 +3706,7 @@ local function setupSettingsSection()
     themeLabel.BackgroundTransparency = 1
     themeLabel.Text = getText("selectTheme")
     themeLabel.TextColor3 = themes[currentTheme].textColor
-    themeLabel.TextSize = isMobile and 14 or 16
+    themeLabel.TextSize = isMobile and mobileTextSize or 16
     themeLabel.Font = Enum.Font.GothamBold
     themeLabel.ZIndex = 5
     themeLabel.Parent = themeFrame
@@ -2962,6 +3780,8 @@ for _, sectionName in ipairs(sections) do
                 setupTexturesSection()
             elseif sectionName == "FPS boost" then
                 setupFPSBoostSection()
+            elseif sectionName == "Animation" then
+                setupAnimationSection()
             elseif sectionName == "Other" then
                 setupOtherSection()
             elseif sectionName == "Settings" then
@@ -2972,13 +3792,8 @@ for _, sectionName in ipairs(sections) do
 end
 
 spawn(function()
-    loadSettings()
-    updateTheme()
-    updateLanguage()
-end)
-
-spawn(function()
     showSplashScreen()
+    OpenButton.Visible = true
 end)
 
 local firstButton = LeftPanel:FindFirstChild(sections[1] .. "Button")
@@ -2986,5 +3801,3 @@ if firstButton then
     firstButton.BackgroundColor3 = themes[currentTheme].accentColor
     setupLightSection()
 end
-
-print("Cloud Visual V2 Menu loaded! Press Right Shift to toggle menu.")
